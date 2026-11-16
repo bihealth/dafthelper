@@ -1,0 +1,26 @@
+Package: dafthelper
+Title: Helper functions for managing a DAFT (data, analysis, figures, text) structured analysis
+Version: 0.0.0.9000
+Authors@R: 
+    person("January", "Weiner", , "january.weiner@gmail.com", role = c("aut", "cre"))
+Description: Simple helper functions for managing a DAFT (data, analysis,
+    figures, text) structured analysis. This is not intended for creating
+    workflows, but rather for managing a manual, interactive analysis. If
+    you have a DAFT structured analysis and you wonder which script
+    produced which figure, this package may be of some help.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Imports: 
+    cli,
+    dplyr,
+    glue,
+    purrr,
+    stringr,
+    tibble,
+    yaml
+Suggests: 
+    testthat (>= 3.0.0),
+    withr
+Config/testthat/edition: 3
