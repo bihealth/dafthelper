@@ -5,25 +5,32 @@
 \title{Create a new daft project directory structure}
 \usage{
 use_daft(
-  format = "{number}_{name}",
   dir = ".",
+  format = "{number}_{name}",
   number_format = "\%02d",
-  names = c("data", "analysis", "figures", "text")
+  start_with = 1,
+  scheme = c("daft", "mdaft", "custom"),
+  names = NULL
 )
 }
 \arguments{
-\item{format}{A string specifying the format of the subdirectory names.
-Evaluated by \code{glue}. The default is "{number}_{name}".}
-
 \item{dir}{The directory in which to create the subdirectories. Defaults
 to the current working directory.}
+
+\item{format}{A string specifying the format of the subdirectory names.
+Evaluated by \code{glue}. The default is \code{"{number}_{name}"}.}
 
 \item{number_format}{A string specifying the format of the subdirectory.
 Evaluated by \code{sprintf}. The default is "\%02d", which will create
 subdirectory names like "01_data", "02_analysis", etc.}
 
-\item{names}{A character vector of names for the subdirectories. The
-default is \code{data}, \code{analysis}, \code{figures}, and \code{text}.}
+\item{start_with}{An integer specifying the starting number for the
+subdirectory names. The default is 1.}
+
+\item{scheme}{"daft", "mdaft", or "custom". If "custom", you need to
+provide a vector of names for the subdirectories with the \code{names}
+argument. The default is "daft" (\code{data}, \code{analysis}, \code{figures},
+and \code{text}); "mdaft" adds a \code{meta} subdirectory.}
 }
 \value{
 NULL. The function creates the specified subdirectories in the specified directory.
