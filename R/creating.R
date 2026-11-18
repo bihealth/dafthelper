@@ -40,6 +40,80 @@
   header
 }
 
+# normalize description such that if it is too long, it gets formatted as a
+# para
+.normalize_desc <- function(desc) {
+  desc <- paste(as.character(desc), collapse = "\n")
+
+  desc <- paste(strwrap(desc, width = 60),
+                              collapse = "\n")
+
+  desc
+}
+
+# normalize the header to ensure that it has the correct structure.
+.normalize_header <- function(header) {
+
+  # comment is a character vector.
+  if(!is.null(header$comment)) {
+    header$comment <- .normalize_desc(header$comment)
+  } else {
+    header$comment <- ""
+  }
+
+  # description likewise
+  if(!is.null(header$description)) {
+    header$description <- .normalize_desc(header$description)
+  }
+
+  if(!is.null(header$params)) {
+    header$params <- lapply(header$params, function(x) {
+      if(is.list(x) && !is.null(x$value)) {
+        x$value <- as.character(x$value)
+      }
+      x
+    })
+  }
+
+  # ok, maybe we should have afunction for that...
+  if(!is.null(header$inputs)) {
+    header$inputs <- lapply(header$inputs, function(x) {
+      if(is.list(x)) { 
+        if(is.null(x$file)) {
+          cli_abort("Input file is missing 'file' field in header: {.val {x}}")
+        }
+        x$file <- as.character(x$file)
+        if(is.null(x$description)) {
+          x$description <- "no description"
+        }
+        x$description <- .normalize_desc(x$description)
+      } else {
+        x <- list(file = as.character(x), description = "no description")
+      }
+      x
+    })
+  }
+
+  if(!is.null(header$outputs)) {
+    header$outputs <- lapply(header$outputs, function(x) {
+      if(is.list(x)) { 
+        if(is.null(x$file)) {
+          cli_abort("Output file is missing 'file' field in header: {.val {x}}")
+        }
+        x$file <- as.character(x$file)
+        if(is.null(x$description)) {
+          x$description <- "no description"
+        }
+        x$description <- .normalize_desc(x$description)
+      } else {
+        x <- list(file = as.character(x), description = "no description")
+      }
+      x
+    })
+  }
+  header
+}
+
 
 # create a new script. Create an empty text file in the specified directory
 # with the specified name. Add a template YAML header to the file. If the
@@ -102,7 +176,11 @@ daft_new_script <- function(file,
     return(invisible(NULL))
   }
 
-  if(is.null(comment) && is.null(description) && is.null(params) && is.null(inputs) && is.null(outputs)) {
+  if(is.null(comment) &&
+     is.null(description) &&
+     is.null(params) &&
+     is.null(inputs) &&
+     is.null(outputs)) {
     header <- .mock_script_yaml(dir)
   } else {
     header <- list(
@@ -114,8 +192,7 @@ daft_new_script <- function(file,
     )
   }
 
-  header$description <- paste(strwrap(header$description, width = 60),
-                              collapse = "\n")
+  header <- .normalize_header(header)
 
   comment <- header$comment %||% ""
   header$comment <- NULL  # remove comment from header before converting to YAML
@@ -143,10 +220,11 @@ daft_new_script <- function(file,
 #'        Evaluated by `glue`. The default is `"{number}_{name}"`.
 #' @param dir The directory in which to create the subdirectories. Defaults
 #'        to the current working directory.
-#' @param scheme "daft", "mdaft", or "custom". If "custom", you need to
+#' @param scheme "daft", "mdaft", "dat" or "custom". If "custom", you need to
 #'        provide a vector of names for the subdirectories with the `names`
 #'        argument. The default is "daft" (`data`, `analysis`, `figures`,
-#'        and `text`); "mdaft" adds a `meta` subdirectory.
+#'        and `text`); "mdaft" adds a `meta` subdirectory; `dat` is a
+#'        shortened version with only `data`, `analysis`, and `text`.
 #' @param number_format A string specifying the format of the subdirectory.
 #'       Evaluated by `sprintf`. The default is "%02d", which will create
 #'       subdirectory names like "01_data", "02_analysis", etc.
@@ -159,7 +237,7 @@ use_daft <- function(dir = ".",
                      format = "{number}_{name}",
                      number_format = "%02d",
                      start_with = 1,
-                     scheme = c("daft", "mdaft", "custom"),
+                     scheme = c("daft", "mdaft", "dat", "custom"),
                      names = NULL
                      ) {
   if(!dir.exists(dir)) {
@@ -172,6 +250,8 @@ use_daft <- function(dir = ".",
     names <- c("data", "analysis", "figures", "text")
   } else if(scheme == "mdaft") {
     names <- c("meta", "data", "analysis", "figures", "text")
+  } else if(scheme == "dat") {
+    names <- c("data", "analysis", "text")
   } else if(scheme == "custom") {
     if(is.null(names)) {
       stop("For scheme = 'custom', you must provide a vector of names for the subdirectories.")

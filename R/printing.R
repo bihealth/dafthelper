@@ -27,6 +27,12 @@ daft_theme <- list(
     file_df <- daft_files()
   }
 
+  if(file.exists(file)) {
+    mark <- cli::col_green(cli::symbol$tick)
+  } else {
+    mark <- cli::col_red(cli::symbol$cross)
+  }
+
   if(file %in% file_df$script) {
     .print_script_file(file)
     return(invisible(NULL))
@@ -35,7 +41,7 @@ daft_theme <- list(
   df <- file_df |>
       filter(file == query_file)
 
-  cli_rule(left = "{.strong File: {.file {file}}}")
+  cli_rule(left = "{.strong File: {.file {file}} {mark}}")
   d0 <- cli_div(theme = list(div = list("margin-left" = 2)))
 
   if(nrow(df) == 0) {
@@ -47,6 +53,11 @@ daft_theme <- list(
   output_rows <- filter(df, .data[["type"]] == "output")
 
   w <- options()$width - 6
+
+  # show which files produce the file as output
+  if(nrow(output_rows) > 1) {
+    cli_warning("This file is produced as output in multiple scripts\n")
+  } 
 
   if(nrow(output_rows) > 0) {
     cli_text("{.daft-output {symbol$arrow_left} Produced as output in:}")
@@ -63,6 +74,8 @@ daft_theme <- list(
   } else {
     cli_text("{.daft-muted Not produced as output in any script.}")
   }
+
+  # show in which scripts file is used as input
   if(nrow(input_rows) > 0) {
     cli_text("{.daft-input {symbol$arrow_right} Used as input in:}")
     for(i in seq_len(nrow(input_rows))) {
