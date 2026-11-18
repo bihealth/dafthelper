@@ -18,7 +18,7 @@ daft_theme <- list(
 
 
 #' @importFrom dplyr .data
-#' @importFrom cli cli_text cli_alert_warning cli_div cli_rule
+#' @importFrom cli cli_text cli_alert_warning cli_div cli_rule cli_end symbol
 .show_one_file <- function(file, file_df = NULL) {
   cli_div(theme = daft_theme)
   query_file <- file
@@ -111,7 +111,12 @@ daft_theme <- list(
     cli_text("{.field Inputs:}")
     cli_div(theme = list(div = list("margin-left" = 2)))
     for(input in header$inputs) {
-      cli_text("  - {.file {input$file}}: {input$description}")
+      if(file.exists(input$file)) {
+        mark <- cli::col_green(cli::symbol$tick)
+      } else {
+        mark <- cli::col_red(cli::symbol$cross)
+      }
+      cli_text("  - {mark} {.file {input$file}}: {input$description}")
     }
     cli_end()
   }
@@ -119,7 +124,13 @@ daft_theme <- list(
     cli_text("{.field Outputs:}")
     cli_div(theme = list(div = list("margin-left" = 2)))
     for(output in header$outputs) {
-      cli_text("  - {.file {output$file}}: {output$description}")
+      if(file.exists(output$file)) {
+        mark <- cli::col_green(cli::symbol$tick)
+      } else {
+        mark <- cli::col_red(cli::symbol$cross)
+      }
+
+      cli_text("  - {mark} {.file {output$file}}: {output$description}")
     }
     cli_end()
   }
