@@ -28,7 +28,7 @@ test_that("custom metadata round trips through a script in the requested directo
   expect_false(file.exists("custom.R"))
   expect_no_error(parse("analysis/custom.R"))
   header <- daft_get_header("analysis/custom.R")
-  expect_identical(header$description, description)
+  expect_identical(header$description, "Summary: 'quoted' values and a second line")
   expect_identical(header$params, params)
   expect_identical(header$inputs[[1]][c("file", "description")], inputs[[1]])
   expect_identical(header$outputs[[1]][c("file", "description")], outputs[[1]])
@@ -53,4 +53,52 @@ test_that("existing scripts are never overwritten", {
   expect_identical(readBin("existing.R", "raw", n = file.info("existing.R")$size), before)
   expect_null(result$value)
   expect_false(result$visible)
+})
+
+test_that("template file paths follow the script directory", {
+  local_project()
+  dir.create("analysis")
+  for (file_includes_path in c(FALSE, TRUE)) {
+    if (file_includes_path) {
+      console_text(daft_make_script("analysis/path.R"))
+      script <- "analysis/path.R"
+    } else {
+      console_text(daft_make_script("dir.R", dir = "analysis"))
+      script <- "analysis/dir.R"
+    }
+    header <- daft_get_header(script)
+    expect_identical(sub("^\\./", "", vapply(header$inputs, `[[`, "", "file")),
+                     c("analysis/input_file1.rds", "analysis/input_file2.csv"))
+    expect_identical(sub("^\\./", "", vapply(header$outputs, `[[`, "", "file")),
+                     c("analysis/output_file1.csv", "analysis/output_file2.rds"))
+  }
+})
+
+test_that("comments are written as YAML comments and do not become metadata", {
+  local_project()
+  comments <- c("Notes: [not YAML", "Second line with # and 'quotes'")
+  console_text(daft_make_script("comments.R", comment = comments, description = "Example"))
+  expect_true(all(paste0("#: # ", comments) %in% readLines("comments.R")))
+  header <- daft_get_header("comments.R")
+  expect_null(header$comment)
+  expect_identical(header$description, "Example")
+  expect_no_error(parse("comments.R"))
+
+  console_text(daft_make_script("comment-only.R", comment = comments))
+  expect_true(all(paste0("#: # ", comments) %in% readLines("comment-only.R")))
+  header <- daft_get_header("comment-only.R")
+  expect_null(header$params)
+  expect_null(header$inputs)
+  expect_null(header$outputs)
+})
+
+test_that("long descriptions wrap without losing their text", {
+  local_project()
+  description <- paste(rep("A description with several words.", 5), collapse = " ")
+  console_text(daft_make_script("wrapped.R", description = description))
+  header <- daft_get_header("wrapped.R")
+  lines <- strsplit(header$description, "\n", fixed = TRUE)[[1]]
+  expect_gt(length(lines), 1L)
+  expect_true(all(nchar(lines) <= 60L))
+  expect_identical(paste(lines, collapse = " "), description)
 })
